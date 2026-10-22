@@ -1,0 +1,416 @@
+import React, { useState, useMemo } from "react";
+import { Search, SlidersHorizontal, FileText, Layers, X, Sparkles, Filter } from "lucide-react";
+import { NoteCard } from "./NoteCard";
+import { DEFAULT_SUBJECTS } from "../../config/constants";
+
+export const NotesLibrary = ({ notes, onDownloadClick, initialSubject = "All" }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState(initialSubject || "All");
+  const [selectedType, setSelectedType] = useState("all"); // 'all' | 'pdf' | 'image'
+  const [sortBy, setSortBy] = useState("latest"); // 'latest' | 'downloads' | 'pages' | 'az'
+
+  React.useEffect(() => {
+    if (initialSubject) {
+      setSelectedSubject(initialSubject);
+    }
+  }, [initialSubject]);
+
+  // Extract available subjects from notes or defaults
+  const availableSubjects = useMemo(() => {
+    const set = new Set(DEFAULT_SUBJECTS);
+    notes.forEach((n) => {
+      if (n.subject) set.add(n.subject);
+    });
+    return Array.from(set);
+  }, [notes]);
+
+  // Filtered & Sorted Notes
+  const filteredNotes = useMemo(() => {
+    return notes
+      .filter((note) => {
+        // Search query filter
+        const query = searchQuery.trim().toLowerCase();
+        const matchesQuery =
+          !query ||
+          note.title?.toLowerCase().includes(query) ||
+          note.subject?.toLowerCase().includes(query) ||
+          note.chapter?.toLowerCase().includes(query) ||
+          note.description?.toLowerCase().includes(query);
+
+        // Subject filter
+        const matchesSubject =
+          selectedSubject === "All" ||
+          note.subject?.toLowerCase() === selectedSubject.toLowerCase();
+
+        // Type filter
+        const matchesType =
+          selectedType === "all" ||
+          note.fileType?.toLowerCase() === selectedType.toLowerCase();
+
+        return matchesQuery && matchesSubject && matchesType;
+      })
+      .sort((a, b) => {
+        if (sortBy === "latest") {
+          return new Date(b.uploadDate || 0) - new Date(a.uploadDate || 0);
+        }
+        if (sortBy === "downloads") {
+          return (b.downloadCount || 0) - (a.downloadCount || 0);
+        }
+        if (sortBy === "pages") {
+          return (b.pageCount || 0) - (a.pageCount || 0);
+        }
+        if (sortBy === "az") {
+          return (a.title || "").localeCompare(b.title || "");
+        }
+        return 0;
+      });
+  }, [notes, searchQuery, selectedSubject, selectedType, sortBy]);
+
+  return (
+    <div className="notes-library-section">
+      {/* Title & Stats */}
+      <div className="library-header">
+        <div>
+          <div className="library-badge">
+            <Layers size={14} />
+            <span>Anti-Leak Protected Vault</span>
+          </div>
+          <h2 className="library-title">Notes Library</h2>
+          <p className="library-sub">
+            Download verified handwritten lecture notes, formula sheets, and solved question sets.
+          </p>
+        </div>
+
+        <div className="library-stats-pill">
+          <span className="stats-number">{filteredNotes.length}</span>
+          <span className="stats-label">
+            {filteredNotes.length === 1 ? "Note Available" : "Notes Available"}
+          </span>
+        </div>
+      </div>
+
+      {/* Search & Filter Controls */}
+      <div className="controls-bar glass-panel">
+        <div className="search-box">
+          <Search size={18} className="search-icon" />
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search notes by subject (e.g. BDA, CNS), chapter, title..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="search-clear-btn" onClick={() => setSearchQuery("")}>
+              <X size={15} />
+            </button>
+          )}
+        </div>
+
+        <div className="sort-box">
+          <SlidersHorizontal size={15} className="sort-icon" />
+          <select
+            className="sort-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="latest">Sort: Newest First</option>
+            <option value="downloads">Sort: Most Downloaded</option>
+            <option value="pages">Sort: Page Count</option>
+            <option value="az">Sort: Title (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Subject Filter Pills */}
+      <div className="filter-scroll-container">
+        <div className="subject-pills">
+          {availableSubjects.map((subj) => (
+            <button
+              key={subj}
+              className={`subject-pill ${selectedSubject === subj ? "active" : ""}`}
+              onClick={() => setSelectedSubject(subj)}
+            >
+              {subj}
+            </button>
+          ))}
+        </div>
+
+        {/* File Type Filter */}
+        <div className="file-type-toggle">
+          <button
+            className={`type-btn ${selectedType === "all" ? "active" : ""}`}
+            onClick={() => setSelectedType("all")}
+          >
+            All Types
+          </button>
+          <button
+            className={`type-btn ${selectedType === "pdf" ? "active" : ""}`}
+            onClick={() => setSelectedType("pdf")}
+          >
+            PDF Only
+          </button>
+          <button
+            className={`type-btn ${selectedType === "image" ? "active" : ""}`}
+            onClick={() => setSelectedType("image")}
+          >
+            Images
+          </button>
+        </div>
+      </div>
+
+      {/* Notes Grid */}
+      {filteredNotes.length > 0 ? (
+        <div className="notes-grid">
+          {filteredNotes.map((note) => (
+            <NoteCard key={note.id} note={note} onDownloadClick={onDownloadClick} />
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state glass-panel">
+          <div className="empty-icon-wrap">
+            <FileText size={36} />
+          </div>
+          <h3 className="empty-title">No notes match your filters</h3>
+          <p className="empty-desc">
+            Try searching for a different keyword or resetting your subject filter.
+          </p>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedSubject("All");
+              setSelectedType("all");
+            }}
+          >
+            Reset Filters
+          </button>
+        </div>
+      )}
+
+      <style>{`
+        .notes-library-section {
+          margin: 1.5rem 0 3rem 0;
+        }
+        .library-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 1.5rem;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+        }
+        .library-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--primary-500);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.25rem;
+        }
+        .library-title {
+          font-size: 2rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
+        }
+        .library-sub {
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+          margin-top: 0.25rem;
+        }
+        .library-stats-pill {
+          display: flex;
+          align-items: baseline;
+          gap: 0.4rem;
+          background: var(--bg-surface-elevated);
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius-full);
+          border: 1px solid var(--border-subtle);
+        }
+        .stats-number {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: var(--primary-500);
+        }
+        .stats-label {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-muted);
+        }
+        .controls-bar {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.75rem 1.25rem;
+          margin-bottom: 1.25rem;
+          border-radius: var(--radius-lg);
+        }
+        .search-box {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          flex: 1;
+        }
+        .search-icon {
+          color: var(--text-muted);
+          flex-shrink: 0;
+        }
+        .search-input {
+          width: 100%;
+          border: none;
+          background: transparent;
+          color: var(--text-primary);
+          font-size: 0.95rem;
+        }
+        .search-input::placeholder {
+          color: var(--text-muted);
+        }
+        .search-clear-btn {
+          color: var(--text-muted);
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: var(--radius-sm);
+        }
+        .search-clear-btn:hover {
+          color: var(--text-primary);
+        }
+        .sort-box {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          border-left: 1px solid var(--border-subtle);
+          padding-left: 1rem;
+          flex-shrink: 0;
+        }
+        .sort-icon {
+          color: var(--text-muted);
+        }
+        .sort-select {
+          border: none;
+          background: transparent;
+          color: var(--text-primary);
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .filter-scroll-container {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          margin-bottom: 1.75rem;
+          overflow-x: auto;
+          padding-bottom: 0.5rem;
+        }
+        .subject-pills {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-shrink: 0;
+        }
+        .subject-pill {
+          padding: 0.45rem 1rem;
+          border-radius: var(--radius-full);
+          font-size: 0.85rem;
+          font-weight: 600;
+          background: var(--bg-surface-elevated);
+          border: 1px solid var(--border-subtle);
+          color: var(--text-secondary);
+          transition: all var(--transition-fast);
+          white-space: nowrap;
+        }
+        .subject-pill:hover {
+          color: var(--text-primary);
+          border-color: var(--primary-400);
+        }
+        .subject-pill.active {
+          background: var(--primary-gradient);
+          color: #ffffff;
+          border-color: transparent;
+          box-shadow: var(--primary-glow);
+        }
+        .file-type-toggle {
+          display: flex;
+          align-items: center;
+          background: var(--bg-surface-elevated);
+          padding: 0.25rem;
+          border-radius: var(--radius-full);
+          border: 1px solid var(--border-subtle);
+          flex-shrink: 0;
+        }
+        .type-btn {
+          padding: 0.35rem 0.75rem;
+          border-radius: var(--radius-full);
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          transition: all var(--transition-fast);
+          white-space: nowrap;
+        }
+        .type-btn.active {
+          background: var(--bg-surface);
+          color: var(--primary-500);
+          box-shadow: var(--shadow-sm);
+        }
+        .notes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 1.5rem;
+        }
+        .empty-state {
+          padding: 4rem 2rem;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .empty-icon-wrap {
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          background: var(--bg-surface-elevated);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+          margin-bottom: 1.25rem;
+        }
+        .empty-title {
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 0.5rem;
+        }
+        .empty-desc {
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+          max-width: 420px;
+          margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+          .controls-bar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .sort-box {
+            border-left: none;
+            padding-left: 0;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 0.75rem;
+          }
+          .filter-scroll-container {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};

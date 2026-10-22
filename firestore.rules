@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Check if request is made by Admin
+    // Supports custom claims, hardcoded UID, or config/admin document
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/config/admin) &&
+         (get(/databases/$(database)/documents/config/admin).data.adminUid == request.auth.uid ||
+          (request.auth.uid in get(/databases/$(database)/documents/config/admin).data.adminUids)))
+      );
+    }
+
+    // 1. Users collection: users can create and read only their own profile
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // 2. Notes metadata: readable by authenticated users (registered/anonymous), writable only by admin
+    match /notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 3. Study plan: readable by all visitors, writable only by admin
+    match /studyPlan/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 4. Downloads log: readable only by admin, client-side write allowed for registered users (100% free Spark plan)
+    match /downloads/{downloadId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // 5. Config: readable and writable only by admin (access code hash and admin settings are NEVER exposed to clients)
+    match /config/{configId} {
+      allow read, write: if isAdmin();
+    }
+
+    // 6. Rate limits: strictly internal, only Cloud Functions Admin SDK can read or write
+    match /rateLimits/{userId} {
+      allow read, write: if false;
+    }
+  }
+}

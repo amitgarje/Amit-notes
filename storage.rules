@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: Check if request is from vault admin
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == "amit@notesvault.com"
+      );
+    }
+
+    // Originals folder:
+    // Authenticated students can read files to apply dynamic watermarking in-browser (Client-side via pdf-lib)
+    // Write restricted strictly to vault admin.
+    match /originals/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Public avatars or icons (if any)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
