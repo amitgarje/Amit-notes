@@ -757,24 +757,79 @@ export const StudyPlanCalendar = ({ schedule, onEditClick, isAdmin, onSelectSubj
 
         @media (max-width: 768px) {
           .calendar-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr;
             gap: 0.85rem;
           }
           .exam-countdown-card {
-            padding: 1.25rem;
+            padding: 1rem;
+            gap: 1rem;
+          }
+          .countdown-left {
+            gap: 0.75rem;
+          }
+          .countdown-icon-wrap {
+            width: 44px;
+            height: 44px;
+          }
+          .countdown-title {
+            font-size: 1.15rem;
+          }
+          .countdown-sub {
+            font-size: 0.8rem;
           }
           .countdown-timer-box {
             width: 100%;
+            padding: 0.75rem;
+            min-width: auto;
+          }
+          .timer-number {
+            font-size: 1.85rem;
+          }
+          .calendar-controls-bar {
+            padding: 0.75rem;
+            gap: 0.75rem;
+          }
+          .subject-legend {
+            width: 100%;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 0.35rem;
+            -webkit-overflow-scrolling: touch;
           }
           .controls-right {
             width: 100%;
             justify-content: space-between;
           }
+          .timeline-container {
+            padding: 0.85rem;
+          }
+          .timeline-item {
+            gap: 0.75rem;
+          }
+          .timeline-date-col {
+            width: 52px;
+          }
+          .tl-date {
+            font-size: 1.15rem;
+          }
+          .timeline-content-card {
+            padding: 0.75rem 0.85rem;
+          }
         }
 
         @media (max-width: 480px) {
-          .calendar-grid {
-            grid-template-columns: 1fr;
+          .calendar-day-card {
+            padding: 0.85rem;
+            min-height: 135px;
+          }
+          .date-number {
+            font-size: 1.15rem;
+          }
+          .day-subj-name {
+            font-size: 0.78rem;
+          }
+          .day-topic-text {
+            font-size: 0.75rem;
           }
         }
       `}</style>

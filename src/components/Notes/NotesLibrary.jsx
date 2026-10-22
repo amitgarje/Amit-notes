@@ -395,9 +395,25 @@ export const NotesLibrary = ({ notes, onDownloadClick, initialSubject = "All" })
         }
 
         @media (max-width: 640px) {
+          .notes-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          .library-title {
+            font-size: 1.4rem;
+          }
+          .library-sub {
+            font-size: 0.85rem;
+          }
+          .library-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
           .controls-bar {
             flex-direction: column;
             align-items: stretch;
+            padding: 0.75rem;
           }
           .sort-box {
             border-left: none;
@@ -407,7 +423,23 @@ export const NotesLibrary = ({ notes, onDownloadClick, initialSubject = "All" })
           }
           .filter-scroll-container {
             flex-direction: column;
-            align-items: flex-start;
+            align-items: stretch;
+            gap: 0.75rem;
+          }
+          .subject-pills {
+            width: 100%;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 0.35rem;
+            -webkit-overflow-scrolling: touch;
+          }
+          .file-type-toggle {
+            width: 100%;
+            justify-content: center;
+          }
+          .type-btn {
+            flex: 1;
+            text-align: center;
           }
         }
       `}</style>

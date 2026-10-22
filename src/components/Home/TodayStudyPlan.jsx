@@ -165,6 +165,22 @@ export const TodayStudyPlan = ({ todayPlan, onEditClick, isAdmin, onBrowseNotes 
             width: 100%;
           }
         }
+
+        @media (max-width: 480px) {
+          .today-plan-card {
+            padding: 1rem;
+            margin: 1rem 0 1.5rem 0;
+          }
+          .today-headline {
+            font-size: 1.15rem;
+          }
+          .today-subtext {
+            font-size: 0.85rem;
+          }
+          .today-meta-row {
+            gap: 0.4rem;
+          }
+        }
       `}</style>
     </div>
   );

@@ -156,6 +156,33 @@ export const HeroBanner = ({ onExploreNotes, totalNotes = 5, onRegisterClick, is
             padding: 1.75rem 0 1rem 0;
           }
         }
+
+        @media (max-width: 640px) {
+          .hero-title {
+            font-size: 1.65rem;
+            margin-bottom: 0.85rem;
+          }
+          .hero-description {
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+          }
+          .hero-cta-group {
+            flex-direction: column;
+            width: 100%;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+          }
+          .hero-cta-group .btn {
+            width: 100%;
+          }
+          .hero-badge-pill {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.75rem;
+          }
+          .feature-item {
+            padding: 0.9rem 1rem;
+          }
+        }
       `}</style>
     </div>
   );

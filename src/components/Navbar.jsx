@@ -401,6 +401,47 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenRegister, onOpenAdminLog
           .mobile-hamburger-btn { display: flex; }
           .user-profile-details { display: none; }
         }
+
+        @media (max-width: 640px) {
+          .navbar-content {
+            height: 60px;
+            padding: 0 0.85rem;
+            gap: 0.4rem;
+          }
+          .navbar-brand {
+            gap: 0.55rem;
+          }
+          .brand-logo-icon {
+            width: 36px;
+            height: 36px;
+          }
+          .brand-title {
+            font-size: 1rem;
+          }
+          .brand-tagline {
+            display: none;
+          }
+          .register-cta-btn {
+            display: none;
+          }
+          .admin-badge-pill {
+            display: none;
+          }
+          .navbar-actions {
+            gap: 0.35rem;
+          }
+          .theme-toggle-btn {
+            width: 34px;
+            height: 34px;
+          }
+          .mobile-hamburger-btn {
+            width: 34px;
+            height: 34px;
+          }
+          .user-profile-badge {
+            padding: 0.35rem 0.5rem;
+          }
+        }
       `}</style>
     </header>
   );

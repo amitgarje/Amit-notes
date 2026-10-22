@@ -138,6 +138,23 @@ export const NoteCard = ({ note, onDownloadClick }) => {
         .download-btn {
           width: 100%;
         }
+
+        @media (max-width: 640px) {
+          .note-card {
+            padding: 1.15rem;
+          }
+          .note-card-title {
+            font-size: 1.05rem;
+          }
+          .note-card-desc {
+            font-size: 0.825rem;
+            margin-bottom: 0.85rem;
+          }
+          .download-btn {
+            font-size: 0.88rem;
+            padding: 0.65rem 0.85rem;
+          }
+        }
       `}</style>
     </div>
   );

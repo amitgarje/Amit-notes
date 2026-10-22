@@ -113,6 +113,28 @@ export const Modal = ({ isOpen, onClose, title, subtitle, children, maxWidth = "
           background: var(--bg-surface-elevated);
           color: var(--text-primary);
         }
+
+        @media (max-width: 640px) {
+          .modal-backdrop {
+            padding: 0.75rem;
+            align-items: flex-end;
+          }
+          .modal-content {
+            padding: 1.25rem 1rem;
+            max-height: 90vh;
+            border-radius: 20px 20px 12px 12px;
+          }
+          .modal-header {
+            margin-bottom: 1rem;
+            padding-bottom: 0.65rem;
+          }
+          .modal-title {
+            font-size: 1.15rem;
+          }
+          .modal-subtitle {
+            font-size: 0.8rem;
+          }
+        }
       `}</style>
     </div>
   );
