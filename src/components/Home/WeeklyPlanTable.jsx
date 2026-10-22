@@ -228,7 +228,7 @@ export const WeeklyPlanTable = ({ weeklyPlan, onEditClick, isAdmin }) => {
           gap: 0.85rem;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 600px) {
           .table-container { display: none; }
           .mobile-plan-cards { display: flex; }
           .mobile-plan-card {

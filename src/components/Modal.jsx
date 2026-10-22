@@ -114,22 +114,37 @@ export const Modal = ({ isOpen, onClose, title, subtitle, children, maxWidth = "
           color: var(--text-primary);
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 600px) {
           .modal-backdrop {
-            padding: 0.75rem;
-            align-items: flex-end;
+            padding: 0 !important;
+            align-items: flex-end !important;
           }
           .modal-content {
-            padding: 1.25rem 1rem;
-            max-height: 90vh;
-            border-radius: 20px 20px 12px 12px;
+            padding: 1.5rem 1.25rem 2rem 1.25rem !important;
+            max-height: 88vh !important;
+            max-width: 100vw !important;
+            width: 100% !important;
+            border-radius: 24px 24px 0 0 !important;
+            border-bottom: none !important;
+            margin: 0 !important;
+            animation: sheetSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+          }
+          @keyframes sheetSlideUp {
+            from {
+              transform: translateY(100%);
+              opacity: 0.5;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
           }
           .modal-header {
             margin-bottom: 1rem;
             padding-bottom: 0.65rem;
           }
           .modal-title {
-            font-size: 1.15rem;
+            font-size: clamp(1.1rem, 4vw, 1.25rem);
           }
           .modal-subtitle {
             font-size: 0.8rem;

@@ -1,8 +1,15 @@
 import React, { useState } from "react";
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, Lock, Loader2 } from "lucide-react";
+import { Link2, FileText, CheckCircle2, AlertCircle, Sparkles, HelpCircle, ExternalLink, HardDrive } from "lucide-react";
 import { DEFAULT_SUBJECTS } from "../../config/constants";
-import { db, storage, isDemoConfig, collection, addDoc, serverTimestamp, ref, uploadBytes } from "../../config/firebase";
+import { db, isDemoConfig, collection, addDoc, serverTimestamp } from "../../config/firebase";
 import { useToast } from "../Toast";
+
+// Helper to extract Google Drive file ID
+export function extractGoogleDriveId(url) {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
 
 export const UploadNoteForm = ({ onNoteAdded }) => {
   const { addToast } = useToast();
@@ -12,29 +19,12 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
   const [customSubject, setCustomSubject] = useState("");
   const [chapter, setChapter] = useState("");
   const [pageCount, setPageCount] = useState("");
+  const [driveUrl, setDriveUrl] = useState("");
+  const [fileType, setFileType] = useState("pdf"); // 'pdf' | 'image'
+  const [fileSize, setFileSize] = useState("3.5 MB");
   const [description, setDescription] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const ext = file.name.split(".").pop().toLowerCase();
-      if (!["pdf", "png", "jpg", "jpeg"].includes(ext)) {
-        setErrorMsg("Please upload a PDF or Image (JPG, PNG) note file.");
-        return;
-      }
-      setSelectedFile(file);
-      setErrorMsg("");
-
-      // Auto prefill title if empty
-      if (!title) {
-        const cleanBase = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        setTitle(cleanBase);
-      }
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,27 +38,18 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
       setErrorMsg("Please choose or enter a subject.");
       return;
     }
-    if (!selectedFile) {
-      setErrorMsg("Please select a note file (PDF or Image) to upload.");
+    if (!driveUrl.trim()) {
+      setErrorMsg("Please paste the Google Drive link or Cloud URL for the note file.");
       return;
     }
 
-    setIsUploading(true);
+    setIsSubmitting(true);
     setErrorMsg("");
 
     try {
-      const ext = selectedFile.name.split(".").pop().toLowerCase();
-      const isPdf = ext === "pdf";
-      const fileType = isPdf ? "pdf" : "image";
+      const cleanUrl = driveUrl.trim();
+      const driveFileId = extractGoogleDriveId(cleanUrl);
       const noteId = `note_${Date.now()}`;
-      const storageFileName = `${noteId}.${ext}`;
-      const storagePath = `originals/${storageFileName}`;
-
-      // In production Firebase, upload file to private Storage path /originals/
-      if (!isDemoConfig && storage) {
-        const storageRef = ref(storage, storagePath);
-        await uploadBytes(storageRef, selectedFile);
-      }
 
       const newNote = {
         id: noteId,
@@ -78,11 +59,12 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
         description: description.trim() || `Comprehensive ${finalSubject} notes prepared for exams.`,
         pageCount: parseInt(pageCount, 10) || 12,
         fileType,
-        fileSize: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`,
+        fileSize: fileSize.trim() || "3.5 MB",
+        driveUrl: cleanUrl,
+        driveFileId,
+        source: driveFileId ? "google-drive" : "cloud-url",
         uploadDate: new Date().toISOString().split("T")[0],
         downloadCount: 0,
-        storagePath,
-        storageFileName,
         createdAt: new Date().toISOString(),
       };
 
@@ -96,32 +78,47 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
 
       // Also persist to local notes state
       onNoteAdded(newNote);
-      addToast(`"${newNote.title}" uploaded to /originals/ and published!`, "success");
+      addToast(`"${newNote.title}" published with Google Drive storage!`, "success", 4000);
 
       // Reset form
       setTitle("");
       setChapter("");
       setPageCount("");
+      setDriveUrl("");
       setDescription("");
-      setSelectedFile(null);
     } catch (err) {
-      setErrorMsg(err.message || "Failed to upload note. Check storage permissions.");
+      setErrorMsg(err.message || "Failed to publish note.");
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="upload-note-card glass-panel">
+      {/* Header Banner */}
       <div className="upload-card-header">
         <div className="upload-badge">
-          <Lock size={14} className="text-emerald-500" />
-          <span>Private Storage Destination: /originals/</span>
+          <HardDrive size={15} className="text-emerald-500" />
+          <span>100% Free Forever • Google Drive / Cloud Storage</span>
         </div>
-        <h3 className="upload-title">Upload New Protected Note</h3>
+        <h3 className="upload-title">Publish New Study Note</h3>
         <p className="upload-sub">
-          Files are stored strictly in private Firebase storage. No public URLs are ever exposed.
+          Host your PDF files on Google Drive (15 GB free, unlimited bandwidth) and paste the link below.
+          No paid Firebase Storage needed!
         </p>
+      </div>
+
+      {/* Google Drive Guide Box */}
+      <div className="drive-guide-card">
+        <div className="guide-header">
+          <Sparkles size={16} className="text-primary-500" />
+          <span className="font-bold">How to get your free Google Drive link:</span>
+        </div>
+        <ol className="guide-steps">
+          <li>Upload your note PDF to your personal <strong>Google Drive</strong> (<a href="https://drive.google.com" target="_blank" rel="noopener noreferrer" className="drive-link">drive.google.com <ExternalLink size={12} /></a>).</li>
+          <li>Right-click the file → Click <strong>Share</strong> → Under 'General access', set to <strong>"Anyone with the link can view"</strong>.</li>
+          <li>Click <strong>"Copy link"</strong> and paste it in the field below!</li>
+        </ol>
       </div>
 
       {errorMsg && (
@@ -136,13 +133,13 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
           {/* Note Title */}
           <div className="form-group">
             <label className="input-label" htmlFor="note-title-input">
-              Note Title
+              Note Title *
             </label>
             <input
               id="note-title-input"
               type="text"
               className="input-field"
-              placeholder="e.g. BDA Notes – Chapter 3: MapReduce"
+              placeholder="e.g. BDA Chapter 1: HDFS & MapReduce"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -152,34 +149,32 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
           {/* Subject Dropdown */}
           <div className="form-group">
             <label className="input-label" htmlFor="note-subject-select">
-              Subject
+              Subject *
             </label>
             <select
               id="note-subject-select"
-              className="input-field select-field"
+              className="input-field"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             >
-              {DEFAULT_SUBJECTS.filter((s) => s !== "All").map((s) => (
+              {DEFAULT_SUBJECTS.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-              <option value="Custom">+ Enter Custom Subject</option>
+              <option value="Custom">+ Add Custom Subject</option>
             </select>
           </div>
         </div>
 
+        {/* Custom Subject Field */}
         {subject === "Custom" && (
           <div className="form-group animate-fade-in">
-            <label className="input-label" htmlFor="custom-subject-input">
-              Custom Subject Name
-            </label>
+            <label className="input-label">Enter Custom Subject Name</label>
             <input
-              id="custom-subject-input"
               type="text"
               className="input-field"
-              placeholder="e.g. Distributed Systems"
+              placeholder="e.g. Distributed Systems (DS)"
               value={customSubject}
               onChange={(e) => setCustomSubject(e.target.value)}
               required
@@ -187,17 +182,14 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
           </div>
         )}
 
-        <div className="form-grid-2">
-          {/* Chapter */}
+        <div className="form-grid-3">
+          {/* Chapter / Topic */}
           <div className="form-group">
-            <label className="input-label" htmlFor="note-chapter-input">
-              Chapter / Unit
-            </label>
+            <label className="input-label">Chapter / Topic</label>
             <input
-              id="note-chapter-input"
               type="text"
               className="input-field"
-              placeholder="e.g. Chapter 3"
+              placeholder="e.g. Unit 1 / Chapter 3"
               value={chapter}
               onChange={(e) => setChapter(e.target.value)}
             />
@@ -205,80 +197,83 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
 
           {/* Page Count */}
           <div className="form-group">
-            <label className="input-label" htmlFor="note-pages-input">
-              Page Count
-            </label>
+            <label className="input-label">Page Count</label>
             <input
-              id="note-pages-input"
               type="number"
               min="1"
               max="999"
               className="input-field"
-              placeholder="e.g. 24"
+              placeholder="e.g. 14"
               value={pageCount}
               onChange={(e) => setPageCount(e.target.value)}
             />
           </div>
+
+          {/* File Format */}
+          <div className="form-group">
+            <label className="input-label">Format</label>
+            <select
+              className="input-field"
+              value={fileType}
+              onChange={(e) => setFileType(e.target.value)}
+            >
+              <option value="pdf">PDF Document (.pdf)</option>
+              <option value="image">Image Note (.jpg, .png)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Google Drive / Cloud Link Input */}
+        <div className="form-group">
+          <label className="input-label" htmlFor="drive-link-input">
+            Google Drive Share Link (or Cloud PDF Link) *
+          </label>
+          <div className="input-icon-wrap">
+            <Link2 size={18} className="field-icon text-primary-500" />
+            <input
+              id="drive-link-input"
+              type="url"
+              className="input-field with-icon"
+              placeholder="https://drive.google.com/file/d/1ABCxyz.../view?usp=sharing"
+              value={driveUrl}
+              onChange={(e) => {
+                setDriveUrl(e.target.value);
+                if (errorMsg) setErrorMsg("");
+              }}
+              required
+            />
+          </div>
+          {driveUrl && extractGoogleDriveId(driveUrl) && (
+            <div className="drive-verified-tag">
+              <CheckCircle2 size={13} className="text-emerald-500" />
+              <span>Valid Google Drive file detected (File ID: {extractGoogleDriveId(driveUrl)})</span>
+            </div>
+          )}
         </div>
 
         {/* Description */}
         <div className="form-group">
-          <label className="input-label" htmlFor="note-desc-input">
-            Summary / Syllabus Topics Covered
-          </label>
+          <label className="input-label">Brief Description / Exam Tips</label>
           <textarea
-            id="note-desc-input"
+            className="input-field"
             rows="3"
-            className="input-field textarea-field"
-            placeholder="Important formulas, solved university questions, and diagrams..."
+            placeholder="e.g. Includes solved university 10-mark questions, architecture diagrams, and algorithm steps."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-          />
+          ></textarea>
         </div>
 
-        {/* File Dropzone */}
-        <div className="file-dropzone-box">
-          <input
-            id="note-file-picker"
-            type="file"
-            accept=".pdf,.png,.jpg,.jpeg"
-            className="file-hidden-input"
-            onChange={handleFileChange}
-          />
-          <label htmlFor="note-file-picker" className="dropzone-label">
-            <div className="dropzone-icon">
-              <UploadCloud size={32} />
-            </div>
-            {selectedFile ? (
-              <div className="dropzone-selected">
-                <CheckCircle2 size={18} className="text-emerald-500" />
-                <span className="selected-filename">{selectedFile.name}</span>
-                <span className="selected-size">
-                  ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-                </span>
-              </div>
-            ) : (
-              <div className="dropzone-text">
-                <span className="dropzone-prompt">Click to browse or drag and drop note file</span>
-                <span className="dropzone-formats">PDF Document or JPG / PNG Note Images (Max 50MB)</span>
-              </div>
-            )}
-          </label>
-        </div>
-
+        {/* Submit Button */}
         <button
           type="submit"
-          className="btn btn-primary btn-lg w-full"
-          disabled={isUploading || !selectedFile || !title.trim()}
+          className="btn btn-primary btn-lg submit-note-btn"
+          disabled={isSubmitting}
         >
-          {isUploading ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              <span>Uploading to /originals/ & Indexing...</span>
-            </>
+          {isSubmitting ? (
+            <span>Publishing Note...</span>
           ) : (
             <>
-              <UploadCloud size={18} />
+              <CheckCircle2 size={18} />
               <span>Publish Note to Vault</span>
             </>
           )}
@@ -287,34 +282,64 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
 
       <style>{`
         .upload-note-card {
-          padding: 2rem;
+          padding: 1.75rem;
           margin-bottom: 2rem;
         }
         .upload-card-header {
           margin-bottom: 1.5rem;
+          padding-bottom: 1.25rem;
+          border-bottom: 1px solid var(--border-subtle);
         }
         .upload-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.4rem;
+          gap: 0.45rem;
           background: rgba(16, 185, 129, 0.12);
           border: 1px solid rgba(16, 185, 129, 0.3);
           color: #10b981;
-          padding: 0.25rem 0.75rem;
+          padding: 0.35rem 0.85rem;
           border-radius: var(--radius-full);
-          font-size: 0.78rem;
+          font-size: 0.8rem;
           font-weight: 700;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.75rem;
         }
         .upload-title {
-          font-size: 1.45rem;
+          font-size: clamp(1.2rem, 3vw, 1.5rem);
           font-weight: 800;
           color: var(--text-primary);
         }
         .upload-sub {
           font-size: 0.88rem;
           color: var(--text-muted);
-          margin-top: 0.2rem;
+          margin-top: 0.25rem;
+        }
+        .drive-guide-card {
+          background: rgba(99, 102, 241, 0.06);
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          padding: 1rem 1.25rem;
+          border-radius: var(--radius-md);
+          margin-bottom: 1.5rem;
+        }
+        .guide-header {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.88rem;
+          color: var(--primary-500);
+          margin-bottom: 0.5rem;
+        }
+        .guide-steps {
+          padding-left: 1.25rem;
+          font-size: 0.825rem;
+          color: var(--text-secondary);
+          line-height: 1.6;
+        }
+        .drive-link {
+          color: var(--primary-500);
+          text-decoration: underline;
+          display: inline-flex;
+          align-items: center;
+          gap: 2px;
         }
         .upload-form {
           display: flex;
@@ -323,79 +348,76 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
         }
         .form-grid-2 {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.25rem;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
         }
-        .textarea-field {
-          resize: vertical;
+        .form-grid-3 {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
         }
-        .select-field {
-          cursor: pointer;
-        }
-        .file-dropzone-box {
-          border: 2px dashed var(--border-hover);
-          border-radius: var(--radius-lg);
-          padding: 2rem 1.5rem;
-          text-align: center;
-          background: var(--bg-surface-elevated);
-          transition: all var(--transition-fast);
-        }
-        .file-dropzone-box:hover {
-          border-color: var(--primary-500);
-          background: rgba(99, 102, 241, 0.04);
-        }
-        .file-hidden-input {
-          display: none;
-        }
-        .dropzone-label {
+        .form-group {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 0.75rem;
-          cursor: pointer;
         }
-        .dropzone-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: rgba(99, 102, 241, 0.12);
-          color: var(--primary-500);
+        .input-icon-wrap {
+          position: relative;
+        }
+        .input-icon-wrap .field-icon {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        .input-icon-wrap .input-field {
+          padding-left: 2.4rem;
+        }
+        .drive-verified-tag {
           display: flex;
           align-items: center;
-          justify-content: center;
+          gap: 0.35rem;
+          font-size: 0.775rem;
+          color: #10b981;
+          font-weight: 600;
+          margin-top: 0.4rem;
         }
-        .dropzone-prompt {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          display: block;
-        }
-        .dropzone-formats {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .dropzone-selected {
+        .error-alert {
+          background: rgba(239, 68, 68, 0.12);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #ef4444;
+          padding: 0.75rem 1rem;
+          border-radius: var(--radius-md);
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          background: var(--bg-surface);
-          padding: 0.5rem 1rem;
-          border-radius: var(--radius-full);
-          border: 1px solid var(--border-subtle);
+          font-size: 0.85rem;
+          margin-bottom: 1rem;
         }
-        .selected-filename {
-          font-weight: 700;
-          color: var(--text-primary);
-          font-size: 0.9rem;
-        }
-        .selected-size {
-          font-size: 0.8rem;
-          color: var(--text-muted);
+        .submit-note-btn {
+          min-height: 48px;
+          width: 100%;
+          margin-top: 0.5rem;
         }
 
-        @media (max-width: 640px) {
-          .form-grid-2 { grid-template-columns: 1fr; }
-          .upload-note-card { padding: 1.25rem; }
+        /* Responsive Rules at 600px and 1024px */
+        @media (max-width: 600px) {
+          .upload-note-card {
+            padding: 1.15rem;
+          }
+          .form-grid-2, .form-grid-3 {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          .submit-note-btn {
+            width: 100%;
+            min-height: 44px;
+          }
+        }
+
+        @media (min-width: 601px) and (max-width: 1024px) {
+          .form-grid-3 {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
       `}</style>
     </div>

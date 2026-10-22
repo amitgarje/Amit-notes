@@ -9,6 +9,7 @@ import { RegistrationModal } from "./components/Modals/RegistrationModal";
 import { DownloadModal } from "./components/Modals/DownloadModal";
 import { AdminLoginModal } from "./components/Admin/AdminLoginModal";
 import { ScreenShield } from "./components/Security/ScreenShield";
+import { BottomNav } from "./components/Navigation/BottomNav";
 import { useAuth } from "./context/AuthContext";
 import { useToast } from "./components/Toast";
 import {
@@ -514,6 +515,17 @@ export function App() {
           </div>
         </div>
       </footer>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR (< 600px) */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenRegister={() => setRegisterModalOpen(true)}
+        onOpenAdminLogin={() => {
+          if (isAdmin) setActiveTab("admin");
+          else setAdminLoginModalOpen(true);
+        }}
+      />
 
       {/* MODALS */}
       <RegistrationModal

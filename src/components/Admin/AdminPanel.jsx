@@ -9,6 +9,7 @@ import {
   LogOut,
   Lock,
   HeartHandshake,
+  HardDrive,
 } from "lucide-react";
 import { UploadNoteForm } from "./UploadNoteForm";
 import { ManageNotes } from "./ManageNotes";
@@ -54,7 +55,7 @@ export const AdminPanel = ({
               <span className="badge badge-done">Admin Verified</span>
             </div>
             <p className="admin-page-sub">
-              Manage note access requests, whitelist trusted friends, upload notes, and monitor downloads.
+              Manage note access requests, whitelist trusted friends, upload notes via Google Drive, and monitor downloads.
             </p>
           </div>
         </div>
@@ -90,8 +91,8 @@ export const AdminPanel = ({
           className={`admin-tab-btn ${activeAdminSubTab === "upload" ? "active" : ""}`}
           onClick={() => setActiveAdminSubTab("upload")}
         >
-          <UploadCloud size={17} />
-          <span>Upload Note / Image</span>
+          <HardDrive size={17} className="text-emerald-500" />
+          <span>Google Drive / Upload</span>
         </button>
 
         <button

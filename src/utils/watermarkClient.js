@@ -2,14 +2,30 @@
 // AMIT'S NOTES VAULT - WATERMARK CLIENT & DOWNLOAD DISPATCHER
 // =========================================================
 
-import { isDemoConfig, db, storage, ref, getDownloadURL, addDoc, collection, serverTimestamp } from "../config/firebase";
+import { isDemoConfig, db, addDoc, collection, serverTimestamp } from "../config/firebase";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import confetti from "canvas-confetti";
+
+// Helper to extract Google Drive file ID
+export function parseGoogleDriveFileId(url) {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+// Convert Google Drive share URL to direct download URL
+export function formatGoogleDriveDownloadUrl(url) {
+  const fileId = parseGoogleDriveFileId(url);
+  if (fileId) {
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+  }
+  return url;
+}
 
 /**
  * Dispatch download request without any access code.
  * Direct watermarked download based purely on verified user Name & Contact Details!
- * 100% Client-Side watermarking using pdf-lib (Free Spark plan, ZERO Cloud Functions needed)
+ * 100% Client-Side watermarking using pdf-lib (Free Spark plan, ZERO Firebase Storage)
  */
 export async function executeNoteDownload({ note, userProfile, currentUser }) {
   if (!userProfile || !userProfile.name || !userProfile.phone) {
@@ -19,11 +35,11 @@ export async function executeNoteDownload({ note, userProfile, currentUser }) {
   const uid = currentUser?.uid || userProfile.phone;
   let pdfBytes = null;
 
-  // 1. Try to load and watermark the real PDF from Firebase Storage if uploaded
-  if (!isDemoConfig && storage && note.storagePath) {
+  // 1. Try to load and watermark the real PDF from Google Drive / Cloud URL if provided
+  if (note.driveUrl || note.fileUrl) {
+    const rawUrl = note.driveUrl || note.fileUrl;
+    const downloadUrl = formatGoogleDriveDownloadUrl(rawUrl);
     try {
-      const fileRef = ref(storage, note.storagePath);
-      const downloadUrl = await getDownloadURL(fileRef);
       const response = await fetch(downloadUrl);
       if (response.ok) {
         const arrayBuffer = await response.arrayBuffer();
@@ -34,8 +50,8 @@ export async function executeNoteDownload({ note, userProfile, currentUser }) {
           userPhone: userProfile.phone,
         });
       }
-    } catch (storageErr) {
-      console.warn("Could not watermark uploaded file from storage, falling back to local synthesis:", storageErr);
+    } catch (urlErr) {
+      console.warn("Could not fetch remote PDF directly due to browser CORS, falling back to local synthesis:", urlErr);
     }
   }
 

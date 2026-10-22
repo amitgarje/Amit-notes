@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Search, DownloadCloud, FileCheck, ArrowRight, UserCheck } from "lucide-react";
+import { ShieldCheck, Search, DownloadCloud, FileCheck, ArrowRight, UserCheck, HardDrive } from "lucide-react";
 
 export const HeroBanner = ({ onExploreNotes, totalNotes = 5, onRegisterClick, isRegistered }) => {
   return (
@@ -49,11 +49,11 @@ export const HeroBanner = ({ onExploreNotes, totalNotes = 5, onRegisterClick, is
 
         <div className="feature-item glass-panel">
           <div className="feature-icon">
-            <FileCheck size={20} />
+            <HardDrive size={20} className="text-emerald-500" />
           </div>
           <div className="feature-content">
-            <h4 className="feature-title">Access Code Protected</h4>
-            <p className="feature-text">Backend cryptographic verification with rate-limiting.</p>
+            <h4 className="feature-title">Google Drive Cloud</h4>
+            <p className="feature-text">100% Free storage, fast cloud bandwidth, zero server limits.</p>
           </div>
         </div>
 

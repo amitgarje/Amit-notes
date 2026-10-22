@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, Image as ImageIcon, Calendar, Layers, Download, ShieldAlert, Check, Lock, Unlock, Sparkles, Clock, CheckCircle2 } from "lucide-react";
+import { FileText, Image as ImageIcon, Calendar, Layers, Download, ShieldAlert, Check, Lock, Unlock, Sparkles, Clock, CheckCircle2, HardDrive, ExternalLink } from "lucide-react";
 
 export const NoteCard = ({
   note,
@@ -12,6 +12,7 @@ export const NoteCard = ({
 }) => {
   const isImage = note.fileType === "image";
   const isUnlocked = isAdmin || isWhitelisted || isApproved;
+  const isGoogleDrive = !!(note.driveUrl || note.source === "google-drive");
 
   return (
     <div className={`note-card glass-panel ${!isUnlocked ? "card-locked" : ""}`}>
@@ -39,9 +40,17 @@ export const NoteCard = ({
           )}
         </div>
 
-        <div className="file-type-pill" title={isImage ? "Image Note (JPG/PNG)" : "PDF Document"}>
-          {isImage ? <ImageIcon size={14} /> : <FileText size={14} />}
-          <span>{isImage ? "IMAGE" : "PDF"}</span>
+        <div className="top-right-badges">
+          {isGoogleDrive && (
+            <span className="drive-pill" title="Hosted on Google Drive (Free Cloud)">
+              <HardDrive size={12} className="text-emerald-500" />
+              <span>Drive</span>
+            </span>
+          )}
+          <div className="file-type-pill" title={isImage ? "Image Note (JPG/PNG)" : "PDF Document"}>
+            {isImage ? <ImageIcon size={14} /> : <FileText size={14} />}
+            <span>{isImage ? "IMAGE" : "PDF"}</span>
+          </div>
         </div>
       </div>
 
@@ -87,13 +96,28 @@ export const NoteCard = ({
       {/* Action Button: Download if unlocked, or Request Unlock if locked */}
       <div className="note-card-footer">
         {isUnlocked ? (
-          <button
-            className="btn btn-primary w-full download-btn"
-            onClick={() => onDownloadClick(note)}
-          >
-            <Download size={16} />
-            <span>Download Watermarked Note</span>
-          </button>
+          <div className="unlocked-actions-row">
+            <button
+              className="btn btn-primary w-full download-btn"
+              onClick={() => onDownloadClick(note)}
+            >
+              <Download size={16} />
+              <span>Download Watermarked Note</span>
+            </button>
+            {note.driveUrl && (
+              <a
+                href={note.driveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary drive-preview-btn"
+                title="Open in Google Drive Viewer"
+              >
+                <HardDrive size={15} />
+                <span className="drive-btn-text">Drive</span>
+                <ExternalLink size={13} />
+              </a>
+            )}
+          </div>
         ) : hasRequestedUnlock ? (
           <button className="btn btn-secondary w-full pending-btn" disabled>
             <Clock size={16} className="animate-spin text-amber-500" />
@@ -227,16 +251,45 @@ export const NoteCard = ({
         [data-theme='dark'] .card-locked-banner {
           color: #fbbf24;
         }
-        .note-card-footer {
-          margin-top: auto;
+        .top-right-badges {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          flex-shrink: 0;
         }
-        .download-btn, .unlock-request-btn, .pending-btn {
+        .drive-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          padding: 0.2rem 0.45rem;
+          border-radius: var(--radius-sm);
+        }
+        .unlocked-actions-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
           width: 100%;
         }
-        .unlock-request-btn {
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-          color: #ffffff;
-          box-shadow: 0 4px 15px -3px rgba(245, 158, 11, 0.4);
+        .drive-preview-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          padding: 0 0.85rem;
+          min-height: 44px;
+          flex-shrink: 0;
+          font-size: 0.825rem;
+          text-decoration: none;
+          color: var(--text-primary);
+        }
+        .drive-preview-btn:hover {
+          border-color: #10b981;
+          color: #10b981;
         }
         .unlock-request-btn:hover {
           filter: brightness(1.1);

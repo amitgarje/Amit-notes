@@ -235,7 +235,33 @@ export const DownloadLogsTable = () => {
         </table>
       </div>
 
+      {/* Mobile Stacked Card View (< 600px) */}
+      <div className="mobile-logs-cards">
+        {filteredLogs.length > 0 ? (
+          filteredLogs.map((log) => (
+            <div key={log.id} className="mobile-log-card glass-panel">
+              <div className="mobile-log-top">
+                <span className="user-name">{log.name}</span>
+                <span className="badge badge-subject">{log.subject}</span>
+              </div>
+              <div className="mobile-log-title">{log.noteTitle}</div>
+              <div className="mobile-log-meta">
+                <span className="phone-tag"><code>+91 {log.phone}</code></span>
+                <span className="time-tag">{log.timestamp}</span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="empty-logs">No records found.</div>
+        )}
+      </div>
+
       <style>{`
+        .mobile-logs-cards {
+          display: none;
+          flex-direction: column;
+          gap: 0.85rem;
+        }
         .logs-table-section {
           margin-bottom: 2rem;
         }
@@ -361,6 +387,37 @@ export const DownloadLogsTable = () => {
           text-align: center;
           padding: 3rem !important;
           color: var(--text-muted);
+        }
+
+        @media (max-width: 600px) {
+          .table-responsive { display: none; }
+          .mobile-logs-cards { display: flex; }
+          .mobile-log-card {
+            padding: 1rem 1.15rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+          }
+          .mobile-log-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .mobile-log-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+          }
+          .mobile-log-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+            padding-top: 0.35rem;
+            border-top: 1px solid var(--border-subtle);
+          }
         }
       `}</style>
     </div>

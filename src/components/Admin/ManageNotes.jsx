@@ -124,7 +124,58 @@ export const ManageNotes = ({ notes, setNotes }) => {
         </table>
       </div>
 
+      {/* Mobile Stacked Cards (< 600px) */}
+      <div className="mobile-notes-cards">
+        {filteredNotes.length > 0 ? (
+          filteredNotes.map((note) => (
+            <div key={note.id} className="mobile-note-card glass-panel">
+              <div className="mobile-note-top">
+                <span className="badge badge-subject">{note.subject}</span>
+                <span className="format-badge">
+                  {note.fileType === "image" ? (
+                    <>
+                      <ImageIcon size={13} className="text-amber-500" />
+                      <span>IMAGE</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={13} className="text-indigo-500" />
+                      <span>PDF</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              <h4 className="mobile-note-title">{note.title}</h4>
+              <p className="mobile-note-chapter">{note.chapter}</p>
+              <div className="mobile-note-footer">
+                <div className="mobile-note-meta">
+                  <span>{note.pageCount} Pgs</span>
+                  <span>•</span>
+                  <span>{note.downloadCount || 0} DLs</span>
+                  <span>•</span>
+                  <span>{note.uploadDate}</span>
+                </div>
+                <button
+                  className="btn btn-danger btn-sm mobile-delete-btn"
+                  onClick={() => handleDelete(note.id, note.title)}
+                >
+                  <Trash2 size={15} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="empty-text">No notes found.</div>
+        )}
+      </div>
+
       <style>{`
+        .mobile-notes-cards {
+          display: none;
+          flex-direction: column;
+          gap: 0.85rem;
+        }
         .manage-notes-section {
           padding: 1.75rem 2rem;
           margin-bottom: 2rem;
@@ -214,8 +265,50 @@ export const ManageNotes = ({ notes, setNotes }) => {
           color: #ef4444 !important;
         }
 
-        @media (max-width: 640px) {
-          .manage-notes-section { padding: 1.25rem; }
+        @media (max-width: 600px) {
+          .manage-notes-section { padding: 1rem; }
+          .notes-list-table-wrap { display: none; }
+          .mobile-notes-cards { display: flex; }
+          .mobile-note-card {
+            padding: 1.15rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            border-radius: var(--radius-md);
+          }
+          .mobile-note-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .mobile-note-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+          }
+          .mobile-note-chapter {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+          }
+          .mobile-note-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-subtle);
+          }
+          .mobile-note-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+          }
+          .mobile-delete-btn {
+            min-height: 36px;
+            padding: 0.35rem 0.75rem;
+          }
         }
       `}</style>
     </div>

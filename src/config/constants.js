@@ -108,6 +108,8 @@ export const INITIAL_MOCK_NOTES = [
     fileType: "pdf",
     downloadCount: 54,
     fileSize: "2.8 MB",
+    driveUrl: "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs/view?usp=sharing",
+    source: "google-drive",
     description: "Covers 5 V's of Big Data, HDFS NameNode federation, Secondary NameNode checkpointing, and MapReduce execution pipelines.",
   },
   {
@@ -120,6 +122,8 @@ export const INITIAL_MOCK_NOTES = [
     fileType: "pdf",
     downloadCount: 46,
     fileSize: "3.2 MB",
+    driveUrl: "https://drive.google.com/file/d/1y6T_wN5tGgE9X5kH12uVb4Z7wK6aF9mP/view?usp=sharing",
+    source: "google-drive",
     description: "Detailed derivations for Linear Regression, Logistic Cost function, Decision Tree Gini Index, Random Forest, and SVM kernels.",
   },
   {
@@ -132,6 +136,8 @@ export const INITIAL_MOCK_NOTES = [
     fileType: "pdf",
     downloadCount: 39,
     fileSize: "2.4 MB",
+    driveUrl: "https://drive.google.com/file/d/1mQ9rT6vL3wS8kP2jY5bX7cF4nM1zQ9wE/view?usp=sharing",
+    source: "google-drive",
     description: "Complete diagrams of Merkle Trees, SHA-256 blocks, Proof of Work vs Proof of Stake, and Solidity contract structures.",
   },
   {
@@ -144,6 +150,8 @@ export const INITIAL_MOCK_NOTES = [
     fileType: "pdf",
     downloadCount: 33,
     fileSize: "2.9 MB",
+    driveUrl: "https://drive.google.com/file/d/1kL8sR2xW4mN9jP3bV6tY5cF7aQ2zM8eL/view?usp=sharing",
+    source: "google-drive",
     description: "Step-by-step breakdown of Tokenization, Word2Vec Skip-gram vs CBOW, RNN gradients, and Multi-Head Self-Attention in Transformers.",
   },
   {
@@ -156,6 +164,8 @@ export const INITIAL_MOCK_NOTES = [
     fileType: "image",
     downloadCount: 27,
     fileSize: "1.7 MB",
+    driveUrl: "https://drive.google.com/file/d/1vN7wM3xP9kL2jR4bT6tY8cF5aQ1zS7eK/view?usp=sharing",
+    source: "google-drive",
     description: "High-resolution charts for ERP integration, SCM value chains, CRM lifecycle, and Data Warehouse Star & Snowflake schemas.",
   },
 ];

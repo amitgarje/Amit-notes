@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, FileText, Layers, X, Sparkles, Filter } from "lucide-react";
+import { Search, SlidersHorizontal, FileText, Layers, X, Sparkles, Filter, HardDrive, ExternalLink, CloudCheck } from "lucide-react";
 import { NoteCard } from "./NoteCard";
 import { DEFAULT_SUBJECTS } from "../../config/constants";
 
@@ -17,6 +17,7 @@ export const NotesLibrary = ({
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || "All");
   const [selectedType, setSelectedType] = useState("all"); // 'all' | 'pdf' | 'image'
   const [sortBy, setSortBy] = useState("latest"); // 'latest' | 'downloads' | 'pages' | 'az'
+  const [showDriveDetails, setShowDriveDetails] = useState(false);
 
   // Check if current logged in user is in the VIP Friends Whitelist (e.g. Vishwadeep)
   const isWhitelisted = useMemo(() => {
@@ -104,6 +105,38 @@ export const NotesLibrary = ({
           <span className="stats-label">
             {filteredNotes.length === 1 ? "Note Available" : "Notes Available"}
           </span>
+        </div>
+      </div>
+
+      {/* Google Drive Study Section */}
+      <div className="google-drive-banner glass-panel">
+        <div className="drive-banner-left">
+          <div className="drive-banner-icon">
+            <HardDrive size={22} className="text-emerald-500" />
+          </div>
+          <div>
+            <div className="drive-banner-title-row">
+              <h3 className="drive-banner-heading">Google Drive Study Cloud</h3>
+              <span className="drive-badge-tag">100% Free Forever</span>
+            </div>
+            <p className="drive-banner-sub">
+              All PDF study materials are directly hosted on Google Drive (15 GB free cloud, zero storage costs).
+              Watermarked downloads stamp your identity in-browser.
+            </p>
+          </div>
+        </div>
+
+        <div className="drive-banner-actions">
+          <a
+            href="https://drive.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary btn-sm drive-vault-link"
+          >
+            <HardDrive size={15} />
+            <span>Open Google Drive</span>
+            <ExternalLink size={13} />
+          </a>
         </div>
       </div>
 
@@ -281,6 +314,65 @@ export const NotesLibrary = ({
           font-weight: 600;
           color: var(--text-muted);
         }
+        .google-drive-banner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1.15rem 1.4rem;
+          margin-bottom: 1.25rem;
+          border-radius: var(--radius-lg);
+          border-left: 4px solid #10b981;
+          gap: 1rem;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(99, 102, 241, 0.04));
+        }
+        .drive-banner-left {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .drive-banner-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-md);
+          background: rgba(16, 185, 129, 0.12);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .drive-banner-title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .drive-banner-heading {
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        .drive-badge-tag {
+          font-size: 0.725rem;
+          font-weight: 700;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          padding: 2px 7px;
+          border-radius: var(--radius-full);
+        }
+        .drive-banner-sub {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          margin-top: 0.2rem;
+          max-width: 650px;
+        }
+        .drive-vault-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          white-space: nowrap;
+          text-decoration: none;
+        }
         .controls-bar {
           display: flex;
           align-items: center;
@@ -434,13 +526,13 @@ export const NotesLibrary = ({
           margin-bottom: 1.5rem;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 600px) {
           .notes-grid {
             grid-template-columns: 1fr;
             gap: 1rem;
           }
           .library-title {
-            font-size: 1.4rem;
+            font-size: clamp(1.3rem, 4vw, 1.6rem);
           }
           .library-sub {
             font-size: 0.85rem;
@@ -449,6 +541,20 @@ export const NotesLibrary = ({
             flex-direction: column;
             align-items: flex-start;
             gap: 0.75rem;
+          }
+          .google-drive-banner {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 1rem;
+            gap: 0.85rem;
+          }
+          .drive-banner-left {
+            align-items: flex-start;
+          }
+          .drive-vault-link {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
           }
           .controls-bar {
             flex-direction: column;
@@ -480,6 +586,7 @@ export const NotesLibrary = ({
           .type-btn {
             flex: 1;
             text-align: center;
+            min-height: 40px;
           }
         }
       `}</style>
