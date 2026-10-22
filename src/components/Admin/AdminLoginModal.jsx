@@ -28,7 +28,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onSuccess }) => {
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      setErrorMsg(err.message || "Invalid admin password. Default is 'amit123'.");
+      setErrorMsg(err.message || "Invalid admin password. Access denied.");
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export const AdminLoginModal = ({ isOpen, onClose, onSuccess }) => {
               id="admin-pass-input"
               type="password"
               className="input-field with-icon"
-              placeholder="Enter passcode (e.g. amit123)..."
+              placeholder="Enter admin passcode..."
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -78,7 +78,6 @@ export const AdminLoginModal = ({ isOpen, onClose, onSuccess }) => {
               required
             />
           </div>
-          <span className="field-help">Default passcode is <code>amit123</code> (or your Firebase Admin UID).</span>
         </div>
 
         <button type="submit" className="btn btn-primary w-full" disabled={loading || !password.trim()}>

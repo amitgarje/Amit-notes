@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem("vault_admin_session", "true");
       return true;
     }
-    throw new Error("Invalid admin password. Try 'amit123'.");
+    throw new Error("Invalid admin password. Access denied.");
   };
 
   const logoutAdmin = () => {

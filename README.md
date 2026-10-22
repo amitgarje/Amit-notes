@@ -36,7 +36,7 @@ A complete, modern, mobile-first web application designed for **Amit Garje** to 
 - Also supports **Images (JPG / PNG)** with dynamic watermarking using the `sharp` library.
 
 ### 5. 👑 Amit's Admin Control Center
-Accessible with passcode `amit123` (or your Firebase Admin UID):
+Accessible with your admin passcode or your Firebase Admin UID:
 1. **Upload Note / Image:** Upload notes (PDFs or JPG/PNG) with Title, Subject, Chapter, and Page Count. Files are saved securely to private Storage `/originals/` and **immediately become visible to all students on the website**.
 2. **Manage Published Notes:** View all notes, search, check download counts, and delete notes.
 3. **Study Plan Editor:** Live editor for Today's Preparation target and the 7-day Weekly Roadmap.
@@ -140,7 +140,7 @@ To give your account full administrative authority:
    }
    ```
 2. Or set `ADMIN_UID=YOUR_FIREBASE_AUTH_UID` in `functions/.env`.
-3. In the web app, you can also log in immediately using the Admin passcode: `amit123`.
+3. In the web app, you can log in using your Admin passcode.
 
 ### Step 4: Build and Deploy to Firebase
 Run the following commands in the root directory `d:\amit notes app`:
