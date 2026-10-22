@@ -30,7 +30,7 @@ import {
 import { Shield, BookOpen } from "lucide-react";
 
 export function App() {
-  const { isRegistered, isAdmin } = useAuth();
+  const { isRegistered, isAdmin, userProfile } = useAuth();
   const { addToast } = useToast();
 
   // Active navigation tab: 'home' | 'notes' | 'admin'
@@ -162,8 +162,18 @@ export function App() {
           querySnap.forEach((docSnap) => {
             remoteNotes.push({ id: docSnap.id, ...docSnap.data() });
           });
-          setNotes(remoteNotes);
-          localStorage.setItem("vault_notes_list", JSON.stringify(remoteNotes));
+          setNotes((prevNotes) => {
+            const remoteIds = new Set(remoteNotes.map((n) => n.id || n.driveUrl));
+            const merged = [...remoteNotes];
+            (prevNotes || []).forEach((localNote) => {
+              const id = localNote.id || localNote.driveUrl;
+              if (id && !remoteIds.has(id)) {
+                merged.push(localNote);
+              }
+            });
+            localStorage.setItem("vault_notes_list", JSON.stringify(merged));
+            return merged;
+          });
         }
       },
       (err) => console.warn("Firestore notes snapshot error:", err.message)

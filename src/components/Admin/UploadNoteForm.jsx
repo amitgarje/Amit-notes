@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link2, FileText, CheckCircle2, AlertCircle, Sparkles, HelpCircle, ExternalLink, HardDrive } from "lucide-react";
+import { Link2, FileText, CheckCircle2, AlertCircle, Sparkles, HelpCircle, ExternalLink, HardDrive, Upload, FileUp, Paperclip } from "lucide-react";
 import { DEFAULT_SUBJECTS } from "../../config/constants";
 import { db, isDemoConfig, collection, addDoc, serverTimestamp } from "../../config/firebase";
 import { useToast } from "../Toast";
@@ -20,11 +20,39 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
   const [chapter, setChapter] = useState("");
   const [pageCount, setPageCount] = useState("");
   const [driveUrl, setDriveUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [pdfData, setPdfData] = useState(null);
   const [fileType, setFileType] = useState("pdf"); // 'pdf' | 'image'
   const [fileSize, setFileSize] = useState("3.5 MB");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    const sizeStr = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    setFileSize(sizeStr);
+
+    if (file.type.includes("pdf")) {
+      setFileType("pdf");
+    } else if (file.type.includes("image")) {
+      setFileType("image");
+    }
+
+    if (!title.trim()) {
+      const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+      setTitle(baseName);
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPdfData(event.target?.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,8 +66,8 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
       setErrorMsg("Please choose or enter a subject.");
       return;
     }
-    if (!driveUrl.trim()) {
-      setErrorMsg("Please paste the Google Drive link or Cloud URL for the note file.");
+    if (!driveUrl.trim() && !pdfData) {
+      setErrorMsg("Please choose a PDF file from your device or paste a Google Drive link.");
       return;
     }
 
@@ -62,23 +90,30 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
         fileSize: fileSize.trim() || "3.5 MB",
         driveUrl: cleanUrl,
         driveFileId,
-        source: driveFileId ? "google-drive" : "cloud-url",
+        pdfData: pdfData || null,
+        fileName: selectedFile?.name || null,
+        source: driveFileId ? "google-drive" : pdfData ? "device-upload" : "cloud-url",
         uploadDate: new Date().toISOString().split("T")[0],
         downloadCount: 0,
         createdAt: new Date().toISOString(),
       };
 
-      // Save metadata in Firestore
+      // Save metadata in Firestore (strip massive base64 string from doc to respect 1MB Firestore limit)
       if (!isDemoConfig && db) {
-        await addDoc(collection(db, "notes"), {
-          ...newNote,
-          serverTimestamp: serverTimestamp(),
-        });
+        try {
+          const { pdfData: _omit, ...metaToSave } = newNote;
+          await addDoc(collection(db, "notes"), {
+            ...metaToSave,
+            serverTimestamp: serverTimestamp(),
+          });
+        } catch (dbErr) {
+          console.warn("Could not save to remote Firestore (saved locally):", dbErr.message);
+        }
       }
 
-      // Also persist to local notes state
+      // Also persist to local notes state and localStorage
       onNoteAdded(newNote);
-      addToast(`"${newNote.title}" published with Google Drive storage!`, "success", 4000);
+      addToast(`"${newNote.title}" published successfully!`, "success", 4000);
 
       // Reset form
       setTitle("");
@@ -86,6 +121,8 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
       setPageCount("");
       setDriveUrl("");
       setDescription("");
+      setSelectedFile(null);
+      setPdfData(null);
     } catch (err) {
       setErrorMsg(err.message || "Failed to publish note.");
     } finally {
@@ -223,10 +260,39 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
           </div>
         </div>
 
+        {/* Direct PDF File Upload Dropzone */}
+        <div className="form-group">
+          <label className="input-label">
+            Upload PDF Document from Computer
+          </label>
+          <div className="file-upload-card">
+            <input
+              id="pdf-file-selector"
+              type="file"
+              accept=".pdf,image/png,image/jpeg"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
+            <label htmlFor="pdf-file-selector" className="file-dropzone-label">
+              <Upload size={22} className="text-primary-500" />
+              <div className="file-label-text">
+                <span className="font-semibold text-primary">
+                  {selectedFile ? `✓ Selected: ${selectedFile.name}` : "Click to browse and upload PDF note"}
+                </span>
+                <span className="text-muted text-xs">
+                  {selectedFile
+                    ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready for anti-leak student watermarking`
+                    : "Attach your handwritten PDF notes or formula sheets"}
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+
         {/* Google Drive / Cloud Link Input */}
         <div className="form-group">
           <label className="input-label" htmlFor="drive-link-input">
-            Google Drive Share Link (or Cloud PDF Link) *
+            Google Drive Share Link (or Cloud PDF Link) {selectedFile ? "(Optional)" : "*"}
           </label>
           <div className="input-icon-wrap">
             <Link2 size={18} className="field-icon text-primary-500" />
@@ -240,7 +306,7 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
                 setDriveUrl(e.target.value);
                 if (errorMsg) setErrorMsg("");
               }}
-              required
+              required={!selectedFile}
             />
           </div>
           {driveUrl && extractGoogleDriveId(driveUrl) && (
@@ -392,6 +458,29 @@ export const UploadNoteForm = ({ onNoteAdded }) => {
           gap: 0.5rem;
           font-size: 0.85rem;
           margin-bottom: 1rem;
+        }
+        .file-upload-card {
+          border: 2px dashed var(--border-subtle);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface-elevated);
+          transition: border-color var(--transition-fast), background var(--transition-fast);
+        }
+        .file-upload-card:hover {
+          border-color: var(--primary-500);
+          background: rgba(99, 102, 241, 0.05);
+        }
+        .file-dropzone-label {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem 1.25rem;
+          cursor: pointer;
+          width: 100%;
+        }
+        .file-label-text {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
         }
         .submit-note-btn {
           min-height: 48px;

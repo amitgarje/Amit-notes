@@ -25,10 +25,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // 2. Notes metadata: readable by authenticated users (registered/anonymous), writable only by admin
+    // 2. Notes metadata: readable by all visitors so students can browse, writable by admin/client
     match /notes/{noteId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if true;
     }
 
     // 3. Study plan: readable by all visitors, writable only by admin

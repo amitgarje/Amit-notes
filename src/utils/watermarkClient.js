@@ -35,8 +35,31 @@ export async function executeNoteDownload({ note, userProfile, currentUser }) {
   const uid = currentUser?.uid || userProfile.phone;
   let pdfBytes = null;
 
-  // 1. Try to load and watermark the real PDF from Google Drive / Cloud URL if provided
-  if (note.driveUrl || note.fileUrl) {
+  // 1. If note has direct uploaded PDF data (Base64/DataURL)
+  if (note.pdfData) {
+    try {
+      const rawBase64 = typeof note.pdfData === "string" && note.pdfData.includes(",")
+        ? note.pdfData.split(",")[1]
+        : note.pdfData;
+      const binaryString = atob(rawBase64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      pdfBytes = await applyWatermarkToExistingPdf({
+        arrayBuffer: bytes.buffer,
+        note,
+        userName: userProfile.name,
+        userPhone: userProfile.phone,
+      });
+    } catch (dataErr) {
+      console.warn("Could not watermark embedded pdfData:", dataErr);
+    }
+  }
+
+  // 2. Try to load and watermark the real PDF from Google Drive / Cloud URL if provided
+  if (!pdfBytes && (note.driveUrl || note.fileUrl)) {
     const rawUrl = note.driveUrl || note.fileUrl;
     const downloadUrl = formatGoogleDriveDownloadUrl(rawUrl);
     try {
