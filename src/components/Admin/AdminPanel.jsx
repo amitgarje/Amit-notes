@@ -1,10 +1,22 @@
 import React, { useState } from "react";
-import { UploadCloud, BookOpen, Layers, FileSpreadsheet, AlertOctagon, ShieldCheck, LogOut } from "lucide-react";
+import {
+  UploadCloud,
+  BookOpen,
+  Layers,
+  FileSpreadsheet,
+  AlertOctagon,
+  ShieldCheck,
+  LogOut,
+  Lock,
+  HeartHandshake,
+} from "lucide-react";
 import { UploadNoteForm } from "./UploadNoteForm";
 import { ManageNotes } from "./ManageNotes";
 import { EditStudyPlan } from "./EditStudyPlan";
 import { DownloadLogsTable } from "./DownloadLogsTable";
 import { LeakFinder } from "./LeakFinder";
+import { AccessRequestsManager } from "./AccessRequestsManager";
+import { WhitelistedFriendsManager } from "./WhitelistedFriendsManager";
 import { useAuth } from "../../context/AuthContext";
 
 export const AdminPanel = ({
@@ -15,9 +27,18 @@ export const AdminPanel = ({
   onNoteAdded,
   notes = [],
   setNotes,
+  unlockRequests = [],
+  onApproveRequest,
+  onRejectRequest,
+  onApproveAll,
+  whitelistedFriends = [],
+  onAddFriend,
+  onDeleteFriend,
 }) => {
   const { logoutAdmin } = useAuth();
-  const [activeAdminSubTab, setActiveAdminSubTab] = useState("upload");
+  const [activeAdminSubTab, setActiveAdminSubTab] = useState("requests");
+
+  const pendingRequestsCount = (unlockRequests || []).filter((r) => r.status === "pending").length;
 
   return (
     <div className="admin-panel-container">
@@ -33,7 +54,7 @@ export const AdminPanel = ({
               <span className="badge badge-done">Admin Verified</span>
             </div>
             <p className="admin-page-sub">
-              Upload notes & images to the vault, edit study roadmaps, monitor downloads, and trace leaks.
+              Manage note access requests, whitelist trusted friends, upload notes, and monitor downloads.
             </p>
           </div>
         </div>
@@ -46,6 +67,25 @@ export const AdminPanel = ({
 
       {/* Admin Sub-Tabs Navigation */}
       <div className="admin-tabs-nav">
+        <button
+          className={`admin-tab-btn req-tab ${activeAdminSubTab === "requests" ? "active" : ""}`}
+          onClick={() => setActiveAdminSubTab("requests")}
+        >
+          <Lock size={17} />
+          <span>Access Requests</span>
+          {pendingRequestsCount > 0 && (
+            <span className="tab-pending-badge">{pendingRequestsCount}</span>
+          )}
+        </button>
+
+        <button
+          className={`admin-tab-btn ${activeAdminSubTab === "whitelist" ? "active" : ""}`}
+          onClick={() => setActiveAdminSubTab("whitelist")}
+        >
+          <HeartHandshake size={17} />
+          <span>Whitelisted Friends ({whitelistedFriends.length})</span>
+        </button>
+
         <button
           className={`admin-tab-btn ${activeAdminSubTab === "upload" ? "active" : ""}`}
           onClick={() => setActiveAdminSubTab("upload")}
@@ -89,6 +129,23 @@ export const AdminPanel = ({
 
       {/* Tab Content Display */}
       <div className="admin-tab-content">
+        {activeAdminSubTab === "requests" && (
+          <AccessRequestsManager
+            unlockRequests={unlockRequests}
+            onApproveRequest={onApproveRequest}
+            onRejectRequest={onRejectRequest}
+            onApproveAll={onApproveAll}
+          />
+        )}
+
+        {activeAdminSubTab === "whitelist" && (
+          <WhitelistedFriendsManager
+            whitelistedFriends={whitelistedFriends}
+            onAddFriend={onAddFriend}
+            onDeleteFriend={onDeleteFriend}
+          />
+        )}
+
         {activeAdminSubTab === "upload" && <UploadNoteForm onNoteAdded={onNoteAdded} />}
 
         {activeAdminSubTab === "manage" && <ManageNotes notes={notes} setNotes={setNotes} />}
@@ -184,6 +241,18 @@ export const AdminPanel = ({
           background: var(--bg-surface);
           color: var(--primary-500);
           box-shadow: var(--shadow-sm);
+        }
+        .req-tab.active {
+          color: #f59e0b;
+        }
+        .tab-pending-badge {
+          background: #ef4444;
+          color: #ffffff;
+          font-size: 0.7rem;
+          font-weight: 800;
+          padding: 0.1rem 0.45rem;
+          border-radius: var(--radius-full);
+          margin-left: 0.25rem;
         }
         .leak-tab.active {
           color: #ef4444;

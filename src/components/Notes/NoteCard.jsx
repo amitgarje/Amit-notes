@@ -1,14 +1,44 @@
 import React from "react";
-import { FileText, Image as ImageIcon, Calendar, Layers, Download, ShieldAlert, Check } from "lucide-react";
+import { FileText, Image as ImageIcon, Calendar, Layers, Download, ShieldAlert, Check, Lock, Unlock, Sparkles, Clock, CheckCircle2 } from "lucide-react";
 
-export const NoteCard = ({ note, onDownloadClick }) => {
+export const NoteCard = ({
+  note,
+  onDownloadClick,
+  onRequestUnlock,
+  isWhitelisted = false,
+  isApproved = false,
+  hasRequestedUnlock = false,
+  isAdmin = false,
+}) => {
   const isImage = note.fileType === "image";
+  const isUnlocked = isAdmin || isWhitelisted || isApproved;
 
   return (
-    <div className="note-card glass-panel">
-      {/* Top Bar: Subject Badge + File Type Icon */}
+    <div className={`note-card glass-panel ${!isUnlocked ? "card-locked" : ""}`}>
+      {/* Top Bar: Subject Badge + File Type Icon + Lock Status */}
       <div className="note-card-top">
-        <span className="badge badge-subject">{note.subject}</span>
+        <div className="top-left-badges">
+          <span className="badge badge-subject">{note.subject}</span>
+          {isWhitelisted && (
+            <span className="badge badge-done vip-badge" title="Auto-unlocked because your phone is in Amit's friends whitelist!">
+              <Sparkles size={11} />
+              <span>VIP Friend</span>
+            </span>
+          )}
+          {isApproved && !isWhitelisted && (
+            <span className="badge badge-done approved-badge">
+              <CheckCircle2 size={11} />
+              <span>Approved</span>
+            </span>
+          )}
+          {!isUnlocked && (
+            <span className="badge badge-planned locked-badge">
+              <Lock size={11} />
+              <span>Locked</span>
+            </span>
+          )}
+        </div>
+
         <div className="file-type-pill" title={isImage ? "Image Note (JPG/PNG)" : "PDF Document"}>
           {isImage ? <ImageIcon size={14} /> : <FileText size={14} />}
           <span>{isImage ? "IMAGE" : "PDF"}</span>
@@ -37,21 +67,47 @@ export const NoteCard = ({ note, onDownloadClick }) => {
         </div>
       </div>
 
-      {/* Watermark Security Notice */}
-      <div className="card-security-banner">
-        <ShieldAlert size={12} className="text-indigo-400" />
-        <span>Stamps your identity on download</span>
-      </div>
+      {/* Security Banner / Locked Notice */}
+      {isUnlocked ? (
+        <div className="card-security-banner">
+          <ShieldAlert size={12} className="text-indigo-400" />
+          <span>Stamps your verified name & phone on download</span>
+        </div>
+      ) : (
+        <div className="card-locked-banner">
+          <Lock size={13} className="text-amber-500" />
+          <span>
+            {hasRequestedUnlock
+              ? "Access request sent. Amit will approve shortly."
+              : "Locked note. Request access from Amit to unlock."}
+          </span>
+        </div>
+      )}
 
-      {/* Download Action */}
+      {/* Action Button: Download if unlocked, or Request Unlock if locked */}
       <div className="note-card-footer">
-        <button
-          className="btn btn-primary w-full download-btn"
-          onClick={() => onDownloadClick(note)}
-        >
-          <Download size={16} />
-          <span>Download Watermarked Note</span>
-        </button>
+        {isUnlocked ? (
+          <button
+            className="btn btn-primary w-full download-btn"
+            onClick={() => onDownloadClick(note)}
+          >
+            <Download size={16} />
+            <span>Download Watermarked Note</span>
+          </button>
+        ) : hasRequestedUnlock ? (
+          <button className="btn btn-secondary w-full pending-btn" disabled>
+            <Clock size={16} className="animate-spin text-amber-500" />
+            <span>Approval Pending...</span>
+          </button>
+        ) : (
+          <button
+            className="btn btn-primary w-full unlock-request-btn"
+            onClick={() => onRequestUnlock(note)}
+          >
+            <Unlock size={16} />
+            <span>Request Unlock Access</span>
+          </button>
+        )}
       </div>
 
       <style>{`
@@ -62,17 +118,40 @@ export const NoteCard = ({ note, onDownloadClick }) => {
           height: 100%;
           border-radius: var(--radius-lg);
           transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+          position: relative;
         }
         .note-card:hover {
           transform: translateY(-3px);
           box-shadow: var(--shadow-xl);
           border-color: var(--primary-400);
         }
+        .note-card.card-locked {
+          border-top: 3px solid rgba(245, 158, 11, 0.6);
+        }
         .note-card-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
           margin-bottom: 0.85rem;
+          gap: 0.5rem;
+        }
+        .top-left-badges {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          flex-wrap: wrap;
+        }
+        .vip-badge {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(99, 102, 241, 0.18));
+          color: #10b981;
+          border-color: rgba(16, 185, 129, 0.4);
+          font-weight: 800;
+        }
+        .approved-badge {
+          font-weight: 700;
+        }
+        .locked-badge {
+          font-weight: 700;
         }
         .file-type-pill {
           display: inline-flex;
@@ -85,6 +164,7 @@ export const NoteCard = ({ note, onDownloadClick }) => {
           padding: 0.2rem 0.55rem;
           border-radius: var(--radius-sm);
           border: 1px solid var(--border-subtle);
+          flex-shrink: 0;
         }
         .note-card-title {
           font-size: 1.15rem;
@@ -132,11 +212,40 @@ export const NoteCard = ({ note, onDownloadClick }) => {
           border-radius: var(--radius-sm);
           margin-bottom: 1rem;
         }
+        .card-locked-banner {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.74rem;
+          color: #d97706;
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid rgba(245, 158, 11, 0.25);
+          padding: 0.4rem 0.65rem;
+          border-radius: var(--radius-sm);
+          margin-bottom: 1rem;
+        }
+        [data-theme='dark'] .card-locked-banner {
+          color: #fbbf24;
+        }
         .note-card-footer {
           margin-top: auto;
         }
-        .download-btn {
+        .download-btn, .unlock-request-btn, .pending-btn {
           width: 100%;
+        }
+        .unlock-request-btn {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: #ffffff;
+          box-shadow: 0 4px 15px -3px rgba(245, 158, 11, 0.4);
+        }
+        .unlock-request-btn:hover {
+          filter: brightness(1.1);
+        }
+        .pending-btn {
+          background: var(--bg-surface-elevated);
+          color: var(--text-muted);
+          border: 1px dashed var(--border-subtle);
+          cursor: not-allowed;
         }
 
         @media (max-width: 640px) {
@@ -150,7 +259,7 @@ export const NoteCard = ({ note, onDownloadClick }) => {
             font-size: 0.825rem;
             margin-bottom: 0.85rem;
           }
-          .download-btn {
+          .download-btn, .unlock-request-btn, .pending-btn {
             font-size: 0.88rem;
             padding: 0.65rem 0.85rem;
           }

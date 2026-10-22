@@ -8,6 +8,7 @@ import { AdminPanel } from "./components/Admin/AdminPanel";
 import { RegistrationModal } from "./components/Modals/RegistrationModal";
 import { DownloadModal } from "./components/Modals/DownloadModal";
 import { AdminLoginModal } from "./components/Admin/AdminLoginModal";
+import { ScreenShield } from "./components/Security/ScreenShield";
 import { useAuth } from "./context/AuthContext";
 import { useToast } from "./components/Toast";
 import {
@@ -15,6 +16,9 @@ import {
   isDemoConfig,
   collection,
   doc,
+  setDoc,
+  deleteDoc,
+  addDoc,
   onSnapshot,
 } from "./config/firebase";
 import {
@@ -64,11 +68,48 @@ export function App() {
     }
   });
 
+  // Whitelisted Friends state (Auto-approved without manual requests, e.g. Vishwadeep)
+  const [whitelistedFriends, setWhitelistedFriends] = useState(() => {
+    try {
+      const saved = localStorage.getItem("vault_whitelisted_friends");
+      return saved
+        ? JSON.parse(saved)
+        : [
+            {
+              id: "wl_1",
+              name: "Vishwadeep",
+              phone: "9823456789",
+              addedAt: new Date().toISOString(),
+            },
+          ];
+    } catch {
+      return [
+        {
+          id: "wl_1",
+          name: "Vishwadeep",
+          phone: "9823456789",
+          addedAt: new Date().toISOString(),
+        },
+      ];
+    }
+  });
+
+  // Student Unlock & Access Requests state
+  const [unlockRequests, setUnlockRequests] = useState(() => {
+    try {
+      const saved = localStorage.getItem("vault_unlock_requests");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Modal states
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false);
   const [downloadNoteTarget, setDownloadNoteTarget] = useState(null);
   const [pendingDownloadNote, setPendingDownloadNote] = useState(null);
+  const [pendingUnlockNote, setPendingUnlockNote] = useState(null);
 
   // Sync with Firestore in real-time if live DB configured
   useEffect(() => {
@@ -127,10 +168,40 @@ export function App() {
       (err) => console.warn("Firestore notes snapshot error:", err.message)
     );
 
+    // Listen to whitelist collection
+    const unsubWhitelist = onSnapshot(
+      collection(db, "whitelist"),
+      (snap) => {
+        if (!snap.empty) {
+          const list = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+          setWhitelistedFriends(list);
+          localStorage.setItem("vault_whitelisted_friends", JSON.stringify(list));
+        }
+      },
+      (err) => console.warn("Whitelist snapshot error:", err.message)
+    );
+
+    // Listen to unlockRequests collection
+    const unsubRequests = onSnapshot(
+      collection(db, "unlockRequests"),
+      (snap) => {
+        if (!snap.empty) {
+          const list = [];
+          snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+          setUnlockRequests(list);
+          localStorage.setItem("vault_unlock_requests", JSON.stringify(list));
+        }
+      },
+      (err) => console.warn("UnlockRequests snapshot error:", err.message)
+    );
+
     return () => {
       unsubToday();
       unsubCalendar();
       unsubNotes();
+      unsubWhitelist();
+      unsubRequests();
     };
   }, []);
 
@@ -152,11 +223,147 @@ export function App() {
     }
   };
 
+  // Handle student request to unlock a note
+  const handleRequestUnlock = async (note) => {
+    if (!isRegistered || !userProfile?.phone) {
+      setPendingUnlockNote(note);
+      setRegisterModalOpen(true);
+      addToast("Please register your Name and Mobile Number first to request access.", "info");
+      return;
+    }
+
+    const cleanPhone = userProfile.phone.replace(/\D/g, "");
+
+    // Check if friend is already whitelisted (VIP auto-approval)
+    const isWhitelisted = whitelistedFriends.some(
+      (f) => f.phone?.replace(/\D/g, "") === cleanPhone
+    );
+    if (isWhitelisted) {
+      addToast("You are on Amit's Friends Whitelist! Note is already unlocked for you.", "success");
+      return;
+    }
+
+    // Check if already requested
+    const existing = unlockRequests.find(
+      (r) => r.noteId === note.id && (r.phone === cleanPhone || r.phone === userProfile.phone)
+    );
+    if (existing) {
+      if (existing.status === "approved") {
+        addToast(`Access for "${note.title}" is already approved!`, "success");
+      } else {
+        addToast(`Access request already submitted. Waiting for Amit to approve.`, "warning");
+      }
+      return;
+    }
+
+    const newRequest = {
+      id: `req_${Date.now()}`,
+      uid: userProfile.uid || cleanPhone,
+      name: userProfile.name,
+      phone: cleanPhone,
+      noteId: note.id,
+      noteTitle: note.title,
+      subject: note.subject || "General",
+      status: "pending",
+      requestedAt: new Date().toISOString(),
+    };
+
+    const updated = [newRequest, ...unlockRequests];
+    setUnlockRequests(updated);
+    localStorage.setItem("vault_unlock_requests", JSON.stringify(updated));
+
+    if (!isDemoConfig && db) {
+      try {
+        await addDoc(collection(db, "unlockRequests"), newRequest);
+      } catch (err) {
+        console.warn("Could not save unlock request to remote Firestore:", err.message);
+      }
+    }
+
+    addToast(`Access request sent to Amit for "${note.title}". You will be able to view and download once approved!`, "success", 5000);
+  };
+
+  // Admin approves request
+  const handleApproveRequest = async (id, req) => {
+    const updated = unlockRequests.map((r) =>
+      r.id === id || (r.noteId === req.noteId && r.phone === req.phone)
+        ? { ...r, status: "approved" }
+        : r
+    );
+    setUnlockRequests(updated);
+    localStorage.setItem("vault_unlock_requests", JSON.stringify(updated));
+
+    if (!isDemoConfig && db && id) {
+      try {
+        await setDoc(doc(db, "unlockRequests", id), { status: "approved" }, { merge: true });
+      } catch (err) {
+        console.warn("Could not approve request in Firestore:", err.message);
+      }
+    }
+  };
+
+  // Admin rejects request
+  const handleRejectRequest = async (id, req) => {
+    const updated = unlockRequests.map((r) =>
+      r.id === id ? { ...r, status: "rejected" } : r
+    );
+    setUnlockRequests(updated);
+    localStorage.setItem("vault_unlock_requests", JSON.stringify(updated));
+
+    if (!isDemoConfig && db && id) {
+      try {
+        await setDoc(doc(db, "unlockRequests", id), { status: "rejected" }, { merge: true });
+      } catch (err) {
+        console.warn("Could not reject request in Firestore:", err.message);
+      }
+    }
+  };
+
+  // Admin approves all pending requests at once
+  const handleApproveAll = async () => {
+    const updated = unlockRequests.map((r) => ({ ...r, status: "approved" }));
+    setUnlockRequests(updated);
+    localStorage.setItem("vault_unlock_requests", JSON.stringify(updated));
+  };
+
+  // Whitelisted Friends Management
+  const handleAddFriend = async (friend) => {
+    const updated = [friend, ...whitelistedFriends];
+    setWhitelistedFriends(updated);
+    localStorage.setItem("vault_whitelisted_friends", JSON.stringify(updated));
+
+    if (!isDemoConfig && db) {
+      try {
+        await setDoc(doc(db, "whitelist", friend.id || `friend_${Date.now()}`), friend);
+      } catch (err) {
+        console.warn("Could not add friend to Firestore:", err.message);
+      }
+    }
+  };
+
+  const handleDeleteFriend = async (id) => {
+    const updated = whitelistedFriends.filter((f) => f.id !== id && f.phone !== id);
+    setWhitelistedFriends(updated);
+    localStorage.setItem("vault_whitelisted_friends", JSON.stringify(updated));
+
+    if (!isDemoConfig && db) {
+      try {
+        await deleteDoc(doc(db, "whitelist", id));
+      } catch (err) {
+        console.warn("Could not remove friend from Firestore:", err.message);
+      }
+    }
+  };
+
   // Called after successful user registration
   const handleRegistrationSuccess = () => {
     if (pendingDownloadNote) {
       setDownloadNoteTarget(pendingDownloadNote);
       setPendingDownloadNote(null);
+    }
+    if (pendingUnlockNote) {
+      handleRequestUnlock(pendingUnlockNote);
+      setPendingUnlockNote(null);
     }
   };
 
@@ -168,6 +375,9 @@ export function App() {
 
   return (
     <div className="app-shell">
+      {/* Anti-Screenshot, Anti-Copy & Dynamic Watermark Screen Shield */}
+      <ScreenShield />
+
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -183,7 +393,7 @@ export function App() {
       />
 
       <main className="app-container">
-        {/* TAB 1: HOME PAGE (Today's Study Plan + 22 Oct - 17 Nov Exam Calendar + Hero) */}
+        {/* TAB 1: HOME PAGE */}
         {activeTab === "home" && (
           <div className="animate-fade-in">
             <HeroBanner
@@ -217,6 +427,11 @@ export function App() {
             <NotesLibrary
               notes={notes}
               onDownloadClick={handleDownloadClick}
+              onRequestUnlock={handleRequestUnlock}
+              whitelistedFriends={whitelistedFriends}
+              unlockRequests={unlockRequests}
+              userProfile={userProfile}
+              isAdmin={isAdmin}
               initialSubject={initialLibrarySubject}
             />
           </div>
@@ -234,6 +449,13 @@ export function App() {
                 onNoteAdded={handleNoteAdded}
                 notes={notes}
                 setNotes={setNotes}
+                unlockRequests={unlockRequests}
+                onApproveRequest={handleApproveRequest}
+                onRejectRequest={handleRejectRequest}
+                onApproveAll={handleApproveAll}
+                whitelistedFriends={whitelistedFriends}
+                onAddFriend={handleAddFriend}
+                onDeleteFriend={handleDeleteFriend}
               />
             ) : (
               <div className="admin-locked-screen glass-panel">

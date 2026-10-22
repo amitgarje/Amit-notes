@@ -3,11 +3,29 @@ import { Search, SlidersHorizontal, FileText, Layers, X, Sparkles, Filter } from
 import { NoteCard } from "./NoteCard";
 import { DEFAULT_SUBJECTS } from "../../config/constants";
 
-export const NotesLibrary = ({ notes, onDownloadClick, initialSubject = "All" }) => {
+export const NotesLibrary = ({
+  notes,
+  onDownloadClick,
+  onRequestUnlock,
+  whitelistedFriends = [],
+  unlockRequests = [],
+  userProfile = null,
+  isAdmin = false,
+  initialSubject = "All",
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || "All");
   const [selectedType, setSelectedType] = useState("all"); // 'all' | 'pdf' | 'image'
   const [sortBy, setSortBy] = useState("latest"); // 'latest' | 'downloads' | 'pages' | 'az'
+
+  // Check if current logged in user is in the VIP Friends Whitelist (e.g. Vishwadeep)
+  const isWhitelisted = useMemo(() => {
+    if (!userProfile?.phone) return false;
+    const cleanUserPhone = userProfile.phone.replace(/\D/g, "");
+    return (whitelistedFriends || []).some(
+      (f) => f.phone?.replace(/\D/g, "") === cleanUserPhone
+    );
+  }, [userProfile, whitelistedFriends]);
 
   React.useEffect(() => {
     if (initialSubject) {
@@ -162,9 +180,31 @@ export const NotesLibrary = ({ notes, onDownloadClick, initialSubject = "All" })
       {/* Notes Grid */}
       {filteredNotes.length > 0 ? (
         <div className="notes-grid">
-          {filteredNotes.map((note) => (
-            <NoteCard key={note.id} note={note} onDownloadClick={onDownloadClick} />
-          ))}
+          {filteredNotes.map((note) => {
+            const cleanPhone = userProfile?.phone?.replace(/\D/g, "");
+            const hasRequestedUnlock = (unlockRequests || []).some(
+              (r) => r.noteId === note.id && (r.phone === cleanPhone || r.phone === userProfile?.phone)
+            );
+            const isApproved = (unlockRequests || []).some(
+              (r) =>
+                r.noteId === note.id &&
+                (r.phone === cleanPhone || r.phone === userProfile?.phone) &&
+                r.status === "approved"
+            );
+
+            return (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onDownloadClick={onDownloadClick}
+                onRequestUnlock={onRequestUnlock}
+                isWhitelisted={isWhitelisted}
+                isApproved={isApproved}
+                hasRequestedUnlock={hasRequestedUnlock}
+                isAdmin={isAdmin}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="empty-state glass-panel">
