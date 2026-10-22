@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, FileText, Layers, X, Sparkles, Filter, HardDrive, ExternalLink, CloudCheck } from "lucide-react";
+import { Search, SlidersHorizontal, FileText, Layers, X, Sparkles, Filter, Eye, ShieldCheck, Lock } from "lucide-react";
 import { NoteCard } from "./NoteCard";
 import { DEFAULT_SUBJECTS } from "../../config/constants";
 
 export const NotesLibrary = ({
   notes,
+  onViewNoteClick,
   onDownloadClick,
   onRequestUnlock,
   whitelistedFriends = [],
@@ -17,7 +18,6 @@ export const NotesLibrary = ({
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || "All");
   const [selectedType, setSelectedType] = useState("all"); // 'all' | 'pdf' | 'image'
   const [sortBy, setSortBy] = useState("latest"); // 'latest' | 'downloads' | 'pages' | 'az'
-  const [showDriveDetails, setShowDriveDetails] = useState(false);
 
   // Check if current logged in user is in the VIP Friends Whitelist (e.g. Vishwadeep)
   const isWhitelisted = useMemo(() => {
@@ -96,7 +96,7 @@ export const NotesLibrary = ({
           </div>
           <h2 className="library-title">Notes Library</h2>
           <p className="library-sub">
-            Download verified handwritten lecture notes, formula sheets, and solved question sets.
+            Directly view verified handwritten lecture notes, formula sheets, and solved question sets with dynamic watermarking.
           </p>
         </div>
 
@@ -108,35 +108,21 @@ export const NotesLibrary = ({
         </div>
       </div>
 
-      {/* Google Drive Study Section */}
-      <div className="google-drive-banner glass-panel">
-        <div className="drive-banner-left">
-          <div className="drive-banner-icon">
-            <HardDrive size={22} className="text-emerald-500" />
+      {/* Secure In-App Viewer Info Banner */}
+      <div className="secure-view-banner glass-panel">
+        <div className="banner-left">
+          <div className="banner-icon-box">
+            <Eye size={20} className="text-primary-500" />
           </div>
           <div>
-            <div className="drive-banner-title-row">
-              <h3 className="drive-banner-heading">Google Drive Study Cloud</h3>
-              <span className="drive-badge-tag">100% Free Forever</span>
+            <div className="banner-title-row">
+              <h3 className="banner-heading">Direct In-App Notes Viewer</h3>
+              <span className="security-tag">Protected &amp; Watermarked</span>
             </div>
-            <p className="drive-banner-sub">
-              All PDF study materials are directly hosted on Google Drive (15 GB free cloud, zero storage costs).
-              Watermarked downloads stamp your identity in-browser.
+            <p className="banner-sub">
+              Click &quot;View Notes&quot; on any subject to view pages immediately. Screenshots and downloads are restricted to protect notes.
             </p>
           </div>
-        </div>
-
-        <div className="drive-banner-actions">
-          <a
-            href="https://drive.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-secondary btn-sm drive-vault-link"
-          >
-            <HardDrive size={15} />
-            <span>Open Google Drive</span>
-            <ExternalLink size={13} />
-          </a>
         </div>
       </div>
 
@@ -229,6 +215,7 @@ export const NotesLibrary = ({
               <NoteCard
                 key={note.id}
                 note={note}
+                onViewNoteClick={onViewNoteClick || onDownloadClick}
                 onDownloadClick={onDownloadClick}
                 onRequestUnlock={onRequestUnlock}
                 isWhitelisted={isWhitelisted}
@@ -314,64 +301,57 @@ export const NotesLibrary = ({
           font-weight: 600;
           color: var(--text-muted);
         }
-        .google-drive-banner {
+        .secure-view-banner {
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 1.15rem 1.4rem;
           margin-bottom: 1.25rem;
           border-radius: var(--radius-lg);
-          border-left: 4px solid #10b981;
+          border-left: 4px solid var(--primary-500);
           gap: 1rem;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(99, 102, 241, 0.04));
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.04));
         }
-        .drive-banner-left {
+        .banner-left {
           display: flex;
           align-items: center;
           gap: 1rem;
         }
-        .drive-banner-icon {
+        .banner-icon-box {
           width: 44px;
           height: 44px;
           border-radius: var(--radius-md);
-          background: rgba(16, 185, 129, 0.12);
+          background: rgba(99, 102, 241, 0.12);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
         }
-        .drive-banner-title-row {
+        .banner-title-row {
           display: flex;
           align-items: center;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
-        .drive-banner-heading {
+        .banner-heading {
           font-size: 1.05rem;
           font-weight: 700;
           color: var(--text-primary);
         }
-        .drive-badge-tag {
+        .security-tag {
           font-size: 0.725rem;
           font-weight: 700;
-          color: #10b981;
-          background: rgba(16, 185, 129, 0.12);
-          border: 1px solid rgba(16, 185, 129, 0.3);
+          color: var(--primary-400);
+          background: rgba(99, 102, 241, 0.12);
+          border: 1px solid rgba(99, 102, 241, 0.3);
           padding: 2px 7px;
           border-radius: var(--radius-full);
         }
-        .drive-banner-sub {
+        .banner-sub {
           font-size: 0.85rem;
           color: var(--text-muted);
           margin-top: 0.2rem;
           max-width: 650px;
-        }
-        .drive-vault-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
-          white-space: nowrap;
-          text-decoration: none;
         }
         .controls-bar {
           display: flex;

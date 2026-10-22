@@ -7,6 +7,7 @@ import { NotesLibrary } from "./components/Notes/NotesLibrary";
 import { AdminPanel } from "./components/Admin/AdminPanel";
 import { RegistrationModal } from "./components/Modals/RegistrationModal";
 import { DownloadModal } from "./components/Modals/DownloadModal";
+import { ViewNotesModal } from "./components/Modals/ViewNotesModal";
 import { AdminLoginModal } from "./components/Admin/AdminLoginModal";
 import { ScreenShield } from "./components/Security/ScreenShield";
 import { BottomNav } from "./components/Navigation/BottomNav";
@@ -108,6 +109,8 @@ export function App() {
   // Modal states
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false);
+  const [viewingNoteTarget, setViewingNoteTarget] = useState(null);
+  const [pendingViewNote, setPendingViewNote] = useState(null);
   const [downloadNoteTarget, setDownloadNoteTarget] = useState(null);
   const [pendingDownloadNote, setPendingDownloadNote] = useState(null);
   const [pendingUnlockNote, setPendingUnlockNote] = useState(null);
@@ -221,6 +224,17 @@ export function App() {
     const updated = [newNote, ...notes];
     setNotes(updated);
     localStorage.setItem("vault_notes_list", JSON.stringify(updated));
+  };
+
+  // Trigger secure in-app note viewer
+  const handleViewNoteClick = (note) => {
+    if (!isRegistered) {
+      setPendingViewNote(note);
+      setRegisterModalOpen(true);
+      addToast("Please register your identity first. It will be dynamically stamped on your note viewer.", "info");
+    } else {
+      setViewingNoteTarget(note);
+    }
   };
 
   // Trigger download flow (direct watermarking after registration check)
@@ -368,6 +382,10 @@ export function App() {
 
   // Called after successful user registration
   const handleRegistrationSuccess = () => {
+    if (pendingViewNote) {
+      setViewingNoteTarget(pendingViewNote);
+      setPendingViewNote(null);
+    }
     if (pendingDownloadNote) {
       setDownloadNoteTarget(pendingDownloadNote);
       setPendingDownloadNote(null);
@@ -437,6 +455,7 @@ export function App() {
           <div className="animate-fade-in">
             <NotesLibrary
               notes={notes}
+              onViewNoteClick={handleViewNoteClick}
               onDownloadClick={handleDownloadClick}
               onRequestUnlock={handleRequestUnlock}
               whitelistedFriends={whitelistedFriends}
@@ -542,9 +561,16 @@ export function App() {
         isOpen={registerModalOpen}
         onClose={() => {
           setRegisterModalOpen(false);
+          setPendingViewNote(null);
           setPendingDownloadNote(null);
         }}
         onSuccess={handleRegistrationSuccess}
+      />
+
+      <ViewNotesModal
+        isOpen={Boolean(viewingNoteTarget)}
+        onClose={() => setViewingNoteTarget(null)}
+        note={viewingNoteTarget}
       />
 
       <DownloadModal

@@ -23,16 +23,23 @@ export const DownloadModal = ({ isOpen, onClose, note }) => {
 
   if (!note) return null;
 
+  const [progressText, setProgressText] = useState("Applying Watermark & Generating PDF...");
+
   const handleDownload = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
+    setProgressText("Preparing watermarked PDF...");
+
+    // Micro-delay to let React render the spinner cleanly
+    await new Promise((r) => setTimeout(r, 30));
 
     try {
       await executeNoteDownload({
         note,
         userProfile,
         currentUser,
+        onProgress: (status) => setProgressText(status),
       });
 
       setSuccess(true);
@@ -40,7 +47,7 @@ export const DownloadModal = ({ isOpen, onClose, note }) => {
 
       setTimeout(() => {
         onClose();
-      }, 1200);
+      }, 1000);
     } catch (err) {
       setErrorMsg(err.message || "Failed to download note. Please try again.");
     } finally {
@@ -115,7 +122,7 @@ export const DownloadModal = ({ isOpen, onClose, note }) => {
             {loading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                <span>Applying Watermark & Generating PDF...</span>
+                <span>{progressText}</span>
               </>
             ) : success ? (
               <>
